@@ -1,9 +1,13 @@
 ﻿#pragma once
-
+#define _USE_MATH_DEFINES
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/imgproc.hpp"
+#include <math.h>
+#include <vector>
+#include <iostream>
 
+using namespace std;
 using namespace cv;
 
 /*
@@ -20,14 +24,17 @@ public:
 	- srcWidthStep: widthstep của ảnh gốc
 	- nChannels: số kênh màu của ảnh gốc
 	- pDstRow: con trỏ của ảnh kết quả đến pixel đang muốn nội suy màu
-
 	*/
 	virtual void Interpolate(
 		float tx, float ty,
 		uchar* pSrc, int srcWidthStep, int nChannels,
 		uchar* pDstRow) = 0;
-	PixelInterpolate();
-	~PixelInterpolate();
+	PixelInterpolate() {
+
+	}
+	~PixelInterpolate() {
+
+	}
 };
 
 /*
@@ -74,6 +81,8 @@ public:
 	//transform 1 điểm (x,y) theo matrix transform hiện hành đã có
 	void TransformPoint(float &x, float &y);
 
+	// inverse matrix()
+	void inv();
 	AffineTransform();
 	~AffineTransform();
 };
@@ -147,6 +156,10 @@ public:
 		float sx, float sy,
 		PixelInterpolate* interpolator);
 
-	GeometricTransformer();
-	~GeometricTransformer();
+	GeometricTransformer() {
+
+	}
+	~GeometricTransformer() {
+
+	}
 };
