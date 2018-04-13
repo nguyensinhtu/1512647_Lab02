@@ -81,8 +81,12 @@ public:
 	//transform 1 điểm (x,y) theo matrix transform hiện hành đã có
 	void TransformPoint(float &x, float &y);
 
+	// tao ma tran don vi
+	void IdentifyMatrix();
+
 	// inverse matrix()
 	void inv();
+
 	AffineTransform();
 	~AffineTransform();
 };

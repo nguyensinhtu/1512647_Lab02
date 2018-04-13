@@ -19,6 +19,6 @@ int main(int argc, char **argv) {
 	PixelInterpolate * interpolator = new NearestNeighborInterpolate();
 	PixelInterpolate * interpolator1 = new BilinearInterpolate();
 	//abc.Scale(image, dstImage, 1.7, 1.7, interpolator1);
-	abc.RotateUnkeepImage(image, dstImage, 45, interpolator);
+	abc.RotateKeepImage(image, dstImage, 70, interpolator1);
 	return 0;
 }

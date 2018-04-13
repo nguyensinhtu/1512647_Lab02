@@ -8,22 +8,23 @@ void AffineTransform::Translate(float dx, float dy)
 	// tao ma tran tinh tien;
 	Mat matrix = (Mat_<float>(3, 3) << 1, 0, 0, 0, 1, 0, dx, dy, 1);
 
-	_matrixTransform = matrix*_matrixTransform;
+	_matrixTransform = _matrixTransform*matrix;
 }
 
 void AffineTransform::Rotate(float angle)
 {
 	float x = cos(angle * M_PI / 180.0);
 	float x2 = sin(angle *M_PI / 180.0);
-	Mat matrix = (Mat_<float>(3, 3) << x, x2, 0, -x2, x, 0, (1 - x)*dX + x2*dY, -x2*dX + (1 - x)*dY, 1);
-	_matrixTransform = matrix*_matrixTransform;
+	//Mat matrix = (Mat_<float>(3, 3) << x, x2, 0, -x2, x, 0, (1 - x)*dX + x2*dY, -x2*dX + (1 - x)*dY, 1);
+	Mat matrix = (Mat_<float>(3, 3) << x, x2, 0, -x2, x, 0, 0, 0, 1);
+	_matrixTransform = _matrixTransform*matrix;
 }
 
 void AffineTransform::Scale(float sx, float sy)
 {
 	Mat matrix = (Mat_<float>(3, 3) << sx, 0, 0, 0, sy, 0, (1 - sx)*dX, (1 - sy)*dY, 1);
 
-	_matrixTransform = matrix * _matrixTransform;
+	_matrixTransform = _matrixTransform*matrix;
 }
 
 void AffineTransform::TransformPoint(float & x, float & y)
@@ -34,10 +35,18 @@ void AffineTransform::TransformPoint(float & x, float & y)
 	y = res.at<float>(0, 1);
 }
 
+void AffineTransform::IdentifyMatrix()
+{
+	Mat matrix = (Mat_<float>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);
+	_matrixTransform = matrix;
+}
+
 void AffineTransform::inv()
 {
 	_matrixTransform =  _matrixTransform.inv();
 }
+
+
 
 AffineTransform::AffineTransform()
 {
@@ -55,7 +64,8 @@ void NearestNeighborInterpolate::Interpolate(float tx, float ty, uchar * pSrc, i
 	int x = round(tx); int y = round(ty);
 
 	for (int i = 0; i < nChannels; ++i) {
-		pDstRow[i] = (uchar)(pSrc[x*srcWidthStep + y*nChannels + i]);
+		uchar  v = (uchar)(pSrc[x*srcWidthStep + y*nChannels + i]);
+		pDstRow[i] = v;
 	}
 }
 
@@ -90,6 +100,8 @@ int GeometricTransformer::Transform(const Mat & beforeImage, Mat & afterImage, A
 {
 	
 	int stepwidth = beforeImage.step[0];
+	cout << beforeImage.size() << endl;
+	cout << "step : " << stepwidth << endl;
 	int nch = beforeImage.step[1];
 	uchar *data = (uchar*)beforeImage.data;
 	uchar* afterdata = (uchar*)afterImage.data;
@@ -97,25 +109,60 @@ int GeometricTransformer::Transform(const Mat & beforeImage, Mat & afterImage, A
 	int width = beforeImage.cols;
 	int height = beforeImage.rows;
 
+	int stepwidth2 = afterImage.step[0];
+	int height1 = afterImage.rows;
+	int width1 = afterImage.cols;
+
+	// lay ma tran nghich dao
 	transformer->inv();
 
-	for (int y = 0; y < height; ++y, afterdata += stepwidth) {
+	int maxx = 0, maxy = 0;
+	for (int y = 0; y < height1; ++y, afterdata += stepwidth2) {
 		uchar *pRow = afterdata;
-		for (int x = 0; x < width; ++x, pRow += nch) {
+		for (int x = 0; x < width1; ++x, pRow += nch) {
 			float yy = y, xx = x;
-			
-			transformer->TransformPoint(xx, yy);
+			transformer->TransformPoint(yy, xx);
+
 			if (round(xx) >= width || round(yy) >= height || xx < 0 || yy < 0)
 				continue;
 			interpolator->Interpolate(yy, xx, data, stepwidth, nch, pRow);
 		}
 	}
+	//cout << "res : " << maxx << " " << maxy << endl;
 	return 0;
 }
 
 int GeometricTransformer::RotateKeepImage(const Mat & srcImage, Mat & dstImage, float angle, PixelInterpolate * interpolator)
 {
-	return 0;
+	if (!srcImage.data) {
+		return 0;
+	}
+
+	
+	int width = srcImage.cols; 
+	int height = srcImage.rows; 
+
+	float x = cos(angle * M_PI / 180.0);
+	float x2 = sin(angle *M_PI / 180.0);
+
+	int dstWidth = (int)(width*x + height*x2);
+	int dstHeight = (int)(width*x2 + height*x);
+
+	dstImage.create(dstHeight, dstWidth, srcImage.type());
+
+	AffineTransform *aff = new AffineTransform();
+	aff->Translate((dstHeight / 2) - (height / 2), (dstWidth / 2) - (width / 2));
+	aff->Translate(-(dstHeight / 2), -(dstWidth / 2));
+	aff->Rotate(angle);
+	aff->Translate(dstHeight / 2, dstWidth / 2);
+	//aff->Translate(height - height, width - width);
+	GeometricTransformer::Transform(srcImage, dstImage, aff, interpolator);
+
+	namedWindow("show", WINDOW_AUTOSIZE);
+	cout << dstImage.size() << endl;
+	imshow("show", dstImage);
+	waitKey(0);
+	return 1;
 }
 
 int GeometricTransformer::RotateUnkeepImage(const Mat & srcImage, Mat & dstImage, float angle, PixelInterpolate * interpolator)
@@ -123,12 +170,16 @@ int GeometricTransformer::RotateUnkeepImage(const Mat & srcImage, Mat & dstImage
 	int width = srcImage.cols;
 	int height = srcImage.rows;
 
-	dX = height / 2;
-	dY = width / 2;
-	dstImage.create(width, height, srcImage.type());
+	//dX = height / 2;
+	//dY = width / 2;
+	dstImage.create(height, width, srcImage.type());
 	AffineTransform *aff = new AffineTransform();
-	//aff->Translate(height / 2, -width / 2);
+	
+	aff->Translate(-(height / 2), - (width / 2));
+
 	aff->Rotate(angle);
+
+	aff->Translate(height / 2, width / 2);
 
 	GeometricTransformer::Transform(srcImage, dstImage, aff, interpolator);
 
