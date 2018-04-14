@@ -84,7 +84,7 @@ void BilinearInterpolate::Interpolate(float tx, float ty, uchar * pSrc, int srcW
 
 	for (int i = 0; i < nChannels; ++i) {
 		pDstRow[i] = (uchar)((1 - a)*(1 - b)*((int)pSrc[x*srcWidthStep + y*nChannels + i]) + a*(1 - b)*((int)pSrc[(x + 1)*srcWidthStep + y*nChannels + i]) +
-			b*(1 - b)*((int)pSrc[x*srcWidthStep + (y + 1)*nChannels + i]) + a*b*((int)pSrc[(x + 1)*srcWidthStep + (y + 1)*nChannels + i]));
+			b*(1 - a)*((int)pSrc[x*srcWidthStep + (y + 1)*nChannels + i]) + a*b*((int)pSrc[(x + 1)*srcWidthStep + (y + 1)*nChannels + i]));
 	}
 }
 
@@ -98,10 +98,12 @@ BilinearInterpolate::~BilinearInterpolate()
 
 int GeometricTransformer::Transform(const Mat & beforeImage, Mat & afterImage, AffineTransform * transformer, PixelInterpolate * interpolator)
 {
-	
+	if (!beforeImage.data) {
+		return 0;
+	}
+
 	int stepwidth = beforeImage.step[0];
 	cout << beforeImage.size() << endl;
-	cout << "step : " << stepwidth << endl;
 	int nch = beforeImage.step[1];
 	uchar *data = (uchar*)beforeImage.data;
 	uchar* afterdata = (uchar*)afterImage.data;
@@ -128,8 +130,7 @@ int GeometricTransformer::Transform(const Mat & beforeImage, Mat & afterImage, A
 			interpolator->Interpolate(yy, xx, data, stepwidth, nch, pRow);
 		}
 	}
-	//cout << "res : " << maxx << " " << maxy << endl;
-	return 0;
+	return 1;
 }
 
 int GeometricTransformer::RotateKeepImage(const Mat & srcImage, Mat & dstImage, float angle, PixelInterpolate * interpolator)
@@ -158,9 +159,13 @@ int GeometricTransformer::RotateKeepImage(const Mat & srcImage, Mat & dstImage, 
 	//aff->Translate(height - height, width - width);
 	GeometricTransformer::Transform(srcImage, dstImage, aff, interpolator);
 
-	namedWindow("show", WINDOW_AUTOSIZE);
+	if (!dstImage.data) {
+		return 0;
+	}
+
+	namedWindow("Rotate keep image", WINDOW_AUTOSIZE);
 	cout << dstImage.size() << endl;
-	imshow("show", dstImage);
+	imshow("Rotate keep image", dstImage);
 	waitKey(0);
 	return 1;
 }
@@ -183,15 +188,22 @@ int GeometricTransformer::RotateUnkeepImage(const Mat & srcImage, Mat & dstImage
 
 	GeometricTransformer::Transform(srcImage, dstImage, aff, interpolator);
 
-	namedWindow("show", WINDOW_AUTOSIZE);
-	cout << dstImage.size() << endl;
-	imshow("show", dstImage);
+	if (!dstImage.data) {
+		return 0;
+	}
+
+	namedWindow("Rotate unkeep image", WINDOW_AUTOSIZE);
+	imshow("Rotate unkeep image", dstImage);
 	waitKey(0);
-	return 0;
+	return 1;
 }
 
 int GeometricTransformer::Scale(const Mat & srcImage, Mat & dstImage, float sx, float sy, PixelInterpolate * interpolator)
 {
+	if (!srcImage.data) {
+		return 0;
+	}
+
 	int width = srcImage.cols;
 	int height = srcImage.rows;
 	
@@ -203,10 +215,13 @@ int GeometricTransformer::Scale(const Mat & srcImage, Mat & dstImage, float sx, 
 	
 	GeometricTransformer::Transform(srcImage, dstImage, aff, interpolator);
 
-	namedWindow("show", WINDOW_AUTOSIZE);
-	cout << dstImage.size() << endl;
-	imshow("show", dstImage);
+	if (!dstImage.data) {
+		return 0;
+	}
+
+	namedWindow("Scale", WINDOW_AUTOSIZE);
+	imshow("Scale", dstImage);
 	waitKey(0);
 	//dstImage.create
-	return 0;
+	return 1;
 }
