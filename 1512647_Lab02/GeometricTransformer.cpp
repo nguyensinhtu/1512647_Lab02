@@ -13,14 +13,13 @@ void AffineTransform::Rotate(float angle)
 {
 	float x = cos(angle * M_PI / 180.0);
 	float x2 = sin(angle *M_PI / 180.0);
-	//Mat matrix = (Mat_<float>(3, 3) << x, x2, 0, -x2, x, 0, (1 - x)*dX + x2*dY, -x2*dX + (1 - x)*dY, 1);
 	Mat matrix = (Mat_<float>(3, 3) << x, x2, 0, -x2, x, 0, 0, 0, 1);
 	_matrixTransform = _matrixTransform*matrix;
 }
 
 void AffineTransform::Scale(float sx, float sy)
 {
-	Mat matrix = (Mat_<float>(3, 3) << sx, 0, 0, 0, sy, 0, (1 - sx)*dX, (1 - sy)*dY, 1);
+	Mat matrix = (Mat_<float>(3, 3) << sx, 0, 0, 0, sy, 0, 0, 0, 1);
 
 	_matrixTransform = _matrixTransform*matrix;
 }
@@ -218,8 +217,11 @@ int GeometricTransformer::Scale(const Mat & srcImage, Mat & dstImage, float sx, 
 	AffineTransform *aff = new AffineTransform();
 
 	// tạo ma trận scale
+	// tinh tiến về tâm
+	aff->Translate(-height / 2, -width / 2);
 	aff->Scale(sx, sy);
-	
+	aff->Translate(height / 2, width / 2);
+
 	GeometricTransformer::Transform(srcImage, dstImage, aff, interpolator);
 
 	if (!dstImage.data) {
