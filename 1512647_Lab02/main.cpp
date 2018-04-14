@@ -1,4 +1,4 @@
-#include "GeometricTransformer.h"
+﻿#include "GeometricTransformer.h"
 #include <iostream>
 
 int main(int argc, char **argv) {
@@ -11,6 +11,8 @@ int main(int argc, char **argv) {
 	Mat srcImage, dstImage;
 	GeometricTransformer *geometricTransformer = new GeometricTransformer();
 	PixelInterpolate *pixelInterpolate;
+
+	// xử lý tham số đầu vào
 	if (strcmp(argv[2], "--bl") == 0) {
 		pixelInterpolate = new BilinearInterpolate();
 	}

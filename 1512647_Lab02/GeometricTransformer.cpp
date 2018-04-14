@@ -1,7 +1,5 @@
 ﻿#include "GeometricTransformer.h"
 
-// scale va rotate quanh goc toa do nay
-int dX, dY;
 
 void AffineTransform::Translate(float dx, float dy)
 {
@@ -115,10 +113,11 @@ int GeometricTransformer::Transform(const Mat & beforeImage, Mat & afterImage, A
 	int height1 = afterImage.rows;
 	int width1 = afterImage.cols;
 
-	// lay ma tran nghich dao
+	// Lấy ma trận nghịch đảo
 	transformer->inv();
 
-	int maxx = 0, maxy = 0;
+	
+	// duyệt trên ảnh mới qua phép biến đổi (x', y') -> (x, y) rối thực hiện nội suy màu
 	for (int y = 0; y < height1; ++y, afterdata += stepwidth2) {
 		uchar *pRow = afterdata;
 		for (int x = 0; x < width1; ++x, pRow += nch) {
@@ -143,20 +142,29 @@ int GeometricTransformer::RotateKeepImage(const Mat & srcImage, Mat & dstImage, 
 	int width = srcImage.cols; 
 	int height = srcImage.rows; 
 
+	// tính sin cos cho ma trận quay
 	float x = cos(angle * M_PI / 180.0);
 	float x2 = sin(angle *M_PI / 180.0);
 
+	// tính kích thước cho của sổ mới
 	int dstWidth = (int)(width*x + height*x2);
 	int dstHeight = (int)(width*x2 + height*x);
 
+	// tạo ảnh mới
 	dstImage.create(dstHeight, dstWidth, srcImage.type());
 
 	AffineTransform *aff = new AffineTransform();
+	
+	// quá trình xoay gồm
+	// tịnh tiến về gốc
+	// xoay
+	// tịnh tiến lại tâm ban đầu
+	
+	// tạo ma trận biến đổi
 	aff->Translate((dstHeight / 2) - (height / 2), (dstWidth / 2) - (width / 2));
 	aff->Translate(-(dstHeight / 2), -(dstWidth / 2));
 	aff->Rotate(angle);
 	aff->Translate(dstHeight / 2, dstWidth / 2);
-	//aff->Translate(height - height, width - width);
 	GeometricTransformer::Transform(srcImage, dstImage, aff, interpolator);
 
 	if (!dstImage.data) {
@@ -175,8 +183,7 @@ int GeometricTransformer::RotateUnkeepImage(const Mat & srcImage, Mat & dstImage
 	int width = srcImage.cols;
 	int height = srcImage.rows;
 
-	//dX = height / 2;
-	//dY = width / 2;
+
 	dstImage.create(height, width, srcImage.type());
 	AffineTransform *aff = new AffineTransform();
 	
@@ -207,10 +214,10 @@ int GeometricTransformer::Scale(const Mat & srcImage, Mat & dstImage, float sx, 
 	int width = srcImage.cols;
 	int height = srcImage.rows;
 	
-	dX = height / 2;
-	dY = width / 2;
 	dstImage.create(width, height, srcImage.type());
 	AffineTransform *aff = new AffineTransform();
+
+	// tạo ma trận scale
 	aff->Scale(sx, sy);
 	
 	GeometricTransformer::Transform(srcImage, dstImage, aff, interpolator);
